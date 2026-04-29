@@ -1,0 +1,32 @@
+[project]
+name = "nvidia-nim"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "chromadb>=1.5.8",
+    "deepagents>=0.5.3",
+    "langchain>=1.2.15",
+    "langchain-community>=0.4.1",
+    "langchain-nvidia-ai-endpoints>=1.2.1",
+    "langgraph>=1.1.10",
+    "langgraph-checkpoint-sqlite>=3.0.3",
+    "pypdf>=6.10.2",
+    "python-dotenv>=1.2.2",
+    "sentence-transformers>=5.4.1",
+    "streamlit>=1.56.0",
+    "torch>=2.6.0",
+    "torchvision>=0.21.0",
+    "torchaudio>=2.6.0",
+]
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu124" }
+torchvision = { index = "pytorch-cu124" }
+torchaudio = { index = "pytorch-cu124" }
+
+[[tool.uv.index]]
+name = "pytorch-cu124"
+url = "https://download.pytorch.org/whl/cu124"
+explicit = true

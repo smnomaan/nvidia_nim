@@ -1,0 +1,10 @@
+__pycache__/
+.venv/
+venv/
+*.pyc
+.cache/
+nim_cache/
+.env
+chroma_db/
+*.sqlite
+data/
