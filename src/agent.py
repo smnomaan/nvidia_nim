@@ -128,12 +128,12 @@ def chat(session_id: str = None):
                                 desc = str(args.get("description", args))[:120]
                                 all_text = str(args).lower()
 
-                                if any(k in all_text for k in ["rag", "retriev", "search", "knowledge", "paper", "document"]):
-                                    _active_subagent = "RAG Retriever"
-                                    agent_color = GREEN
-                                elif any(k in all_text for k in ["fact", "check", "judge", "verif", "claim"]):
+                                if any(k in all_text for k in ["fact", "check", "judge", "verif", "claim"]):
                                     _active_subagent = "Fact Checker"
                                     agent_color = MAGENTA
+                                elif any(k in all_text for k in ["rag", "retriev", "search", "knowledge", "paper", "document"]):
+                                    _active_subagent = "RAG Retriever"
+                                    agent_color = GREEN
                                 else:
                                     _active_subagent = "Subagent"
                                     agent_color = YELLOW
