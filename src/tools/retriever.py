@@ -12,22 +12,31 @@ The tool:
   4. Returns the top-k most relevant text chunks as a formatted string.
 """
 
-from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_chroma import Chroma
+# We defer the imports to prevent PyTorch from initializing in the main thread.
 
 from src.config import CHROMA_DB_DIR
 
-# Initialize once at module load — loaded onto GPU, just like in ingest.py
-_embeddings = HuggingFaceEmbeddings(
-    model_name="BAAI/bge-base-en-v1.5",
-    model_kwargs={"device": "cuda"},
-)
+# We use lazy loading for the vectorstore to prevent PyTorch CUDA threading Segfaults.
+# Streamlit executes UI interactions in separate background threads, and PyTorch
+# will crash if a CUDA model is initialized in the main thread but inferenced elsewhere.
+_vectorstore = None
 
-_vectorstore = Chroma(
-    collection_name="ai_papers",
-    embedding_function=_embeddings,
-    persist_directory=CHROMA_DB_DIR,
-)
+def get_vectorstore():
+    global _vectorstore
+    if _vectorstore is None:
+        from langchain_huggingface import HuggingFaceEmbeddings
+        from langchain_chroma import Chroma
+        
+        _embeddings = HuggingFaceEmbeddings(
+            model_name="BAAI/bge-base-en-v1.5",
+            model_kwargs={"device": "cuda"},
+        )
+        _vectorstore = Chroma(
+            collection_name="ai_papers",
+            embedding_function=_embeddings,
+            persist_directory=CHROMA_DB_DIR,
+        )
+    return _vectorstore
 
 
 def retrieve_from_papers(query: str, top_k: int = 5) -> str:
@@ -44,7 +53,7 @@ def retrieve_from_papers(query: str, top_k: int = 5) -> str:
     Returns:
         A formatted string containing the relevant document passages and metadata.
     """
-    results = _vectorstore.similarity_search(query, k=top_k)
+    results = get_vectorstore().similarity_search(query, k=top_k)
 
     if not results:
         return "No relevant documents found for this query."

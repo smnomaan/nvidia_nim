@@ -1,0 +1,47 @@
+services:
+  # ---------------------------------------------------------
+  # Service 1: The NVIDIA NIM AI Model
+  # ---------------------------------------------------------
+  nim:
+    image: nvcr.io/nim/meta/llama-3.1-8b-instruct:latest
+    container_name: nim-llama
+    ports:
+      - "8000:8000"
+    volumes:
+      # Caches the heavy model weights so they aren't downloaded every time
+      - nim_cache:/opt/nim/.cache
+    environment:
+      # Automatically pulls your NGC key from your .env file
+      - NGC_API_KEY=${NGC_API_KEY}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  # ---------------------------------------------------------
+  # Service 2: Our Python Chatbot Application
+  # ---------------------------------------------------------
+  app:
+    # Tells Docker to build the image using the Dockerfile in this directory
+    build: .
+    container_name: chatbot-ui
+    ports:
+      - "8501:8501" # Expose Streamlit's default port to our browser
+    depends_on:
+      - nim # Ensures the NIM container starts BEFORE our app
+    volumes:
+      # Mount our database files so they don't get erased when the container shuts down
+      - ./chroma_db:/app/chroma_db
+      - ./checkpoints.sqlite:/app/checkpoints.sqlite
+    env_file:
+      - .env # Passes all our API keys (like LangSmith) to the app container
+    environment:
+      # OVERRIDE: Point our app to the internal NIM container URL instead of localhost
+      - NIM_BASE_URL=http://nim:8000/v1
+
+# Declare the persistent volume for the NIM cache
+volumes:
+  nim_cache:

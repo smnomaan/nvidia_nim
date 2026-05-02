@@ -7,4 +7,6 @@ nim_cache/
 .env
 chroma_db/
 *.sqlite
+*.sqlite-shm
+*.sqlite-wal
 data/
