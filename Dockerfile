@@ -1,17 +1,28 @@
-# Use an official lightweight Python 3.11 image as the foundation
 FROM python:3.11-slim
 
-# Set the working directory inside the container to /app
+ARG UV_VERSION=0.8.15
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    UV_HTTP_TIMEOUT=300 \
+    UV_PROJECT_ENVIRONMENT=/opt/venv \
+    PATH="/opt/venv/bin:$PATH"
+
 WORKDIR /app
 
-# Install 'uv' (the extremely fast Python package manager)
-RUN pip install uv
+RUN pip install --no-cache-dir "uv==${UV_VERSION}"
 
-# Copy all of our local project files into the /app folder inside the container
-COPY . /app
+# Install locked dependencies before copying frequently changed application code.
+COPY pyproject.toml uv.lock README.md ./
+RUN uv sync --locked --no-dev
 
-# Install all the project dependencies from pyproject.toml
-RUN uv sync
+COPY app.py main.py ./
+COPY src ./src
 
-# The command that tells the container how to start our Streamlit UI
-CMD ["uv", "run", "streamlit", "run", "app.py", "--server.address=0.0.0.0"]
+RUN useradd --create-home --uid 10001 appuser \
+    && mkdir -p /app/data /app/chroma_db /app/state /home/appuser/.cache/huggingface \
+    && chown -R appuser:appuser /app /home/appuser/.cache
+
+USER appuser
+EXPOSE 8501
+
+CMD ["streamlit", "run", "app.py", "--server.address=0.0.0.0"]

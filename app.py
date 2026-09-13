@@ -1,3 +1,4 @@
+import html
 import os
 import sqlite3
 import uuid
@@ -804,7 +805,14 @@ if prompt:
                             name = tool_call.get("name", "").lower()
                             args = tool_call.get("args", {})
 
-                            desc = str(args.get("description", args.get("query", args.get("claim", str(args)))))[:90]
+                            desc = html.escape(
+                                str(
+                                    args.get(
+                                        "description",
+                                        args.get("query", args.get("claim", str(args))),
+                                    )
+                                )[:90]
+                            )
                             full_args_str = str(args).lower()
 
                             if name in ("rag-retriever", "fact-checker", "task", "delegate"):
@@ -828,7 +836,7 @@ if prompt:
                                 )
                             elif name == "retrieve_from_papers":
                                 # This is the RAG Retriever actually searching ChromaDB
-                                query = args.get("query", str(args))[:90]
+                                query = html.escape(str(args.get("query", str(args)))[:90])
                                 trace_html = append_trace_step(
                                     trace_html,
                                     f"""<span class="trace-agent">RAG Retriever</span>
@@ -838,7 +846,7 @@ if prompt:
                                 )
                             elif name in ("verify_claims", "fact_check"):
                                 # This is the Fact Checker actually running LLM-as-a-judge
-                                claim = args.get("claim", str(args))[:90]
+                                claim = html.escape(str(args.get("claim", str(args)))[:90])
                                 trace_html = append_trace_step(
                                     trace_html,
                                     f"""<span class="trace-fact">Fact Checker</span>
@@ -876,6 +884,8 @@ if prompt:
                             except Exception:
                                 verdict = content[:80]
 
+                            verdict = html.escape(verdict)
+
                             trace_html = append_trace_step(
                                 trace_html,
                                 f"""<span class="trace-fact">Fact Checker</span>
@@ -910,14 +920,8 @@ if prompt:
 
         # ---- Stream finished: now render the final answer ----
         if final_response:
-            import time
-            def stream_words():
-                for word in final_response.split(" "):
-                    yield word + " "
-                    time.sleep(0.04)
-
             with new_message_container:
-                response_container.write_stream(stream_words)
+                response_container.markdown(final_response)
 
         # Record latency
         _elapsed = _time.time() - _start_time
@@ -964,7 +968,7 @@ Done
 
         trace_html = append_trace_step(
             trace_html,
-            f"<span class='trace-status'>Error: {str(exc)}</span>",
+            f"<span class='trace-status'>Error: {html.escape(str(exc))}</span>",
         )
 
         st.session_state.trace_html = trace_html + "</div>"
@@ -972,4 +976,3 @@ Done
             st.session_state.trace_html,
             unsafe_allow_html=True,
         )
-
